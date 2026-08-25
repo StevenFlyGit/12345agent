@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "notice": "本文件等待录入经团队确认的正式职责规则。不得仅凭历史工单自动推断现行权责。",
+  "rule_fields": [
+    "department",
+    "responsibilities",
+    "excluded_responsibilities",
+    "regions",
+    "source_name",
+    "source_url",
+    "version",
+    "effective_date"
+  ],
+  "rules": []
+}

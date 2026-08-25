@@ -1,0 +1,75 @@
+[
+  {
+    "id": "mock-001",
+    "expected_category": "市场监管",
+    "department_hints": ["市场监管", "属地政府"],
+    "needs_clarification": false,
+    "missing_fields": [],
+    "urgent": false,
+    "repeat_request": false
+  },
+  {
+    "id": "mock-002",
+    "expected_category": "城市管理",
+    "department_hints": ["属地城市管理", "物业或社区"],
+    "needs_clarification": true,
+    "missing_fields": ["具体区县", "小区名称或详细位置"],
+    "urgent": false,
+    "repeat_request": false
+  },
+  {
+    "id": "mock-003",
+    "expected_category": null,
+    "department_hints": [],
+    "needs_clarification": true,
+    "missing_fields": ["具体地点", "噪声来源", "发生时段"],
+    "urgent": false,
+    "repeat_request": false
+  },
+  {
+    "id": "mock-004",
+    "expected_category": "交通运输",
+    "department_hints": ["公交运营单位", "公安交管"],
+    "needs_clarification": true,
+    "missing_fields": ["具体公交站名称或位置"],
+    "urgent": false,
+    "repeat_request": false
+  },
+  {
+    "id": "mock-005",
+    "expected_category": "劳动和社会保障",
+    "department_hints": ["人力资源和社会保障", "属地政府"],
+    "needs_clarification": true,
+    "missing_fields": ["原工单编号", "用人单位名称", "工作地点"],
+    "urgent": false,
+    "repeat_request": true
+  },
+  {
+    "id": "mock-006",
+    "expected_category": "公共安全",
+    "department_hints": ["应急处置", "燃气运营单位"],
+    "needs_clarification": true,
+    "missing_fields": ["准确地址", "是否已撤离并联系紧急服务"],
+    "urgent": true,
+    "repeat_request": false,
+    "manual_action": "立即提示人员远离危险区域并转人工紧急处置，Agent 不替代报警或应急指挥。"
+  },
+  {
+    "id": "mock-007",
+    "expected_category": "卫生健康",
+    "department_hints": ["医疗机构", "卫生健康主管部门"],
+    "needs_clarification": true,
+    "missing_fields": ["医院名称", "就诊日期", "缴费凭证"],
+    "urgent": false,
+    "repeat_request": false
+  },
+  {
+    "id": "mock-008",
+    "expected_category": "城市管理",
+    "department_hints": ["属地城市管理"],
+    "needs_clarification": true,
+    "missing_fields": ["道路名称和具体位置"],
+    "urgent": false,
+    "repeat_request": false
+  }
+]

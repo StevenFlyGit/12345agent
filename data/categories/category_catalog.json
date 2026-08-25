@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "source": "官方样例工单父目录",
+  "notice": "一级类别候选，后续需以正式事项分类目录补充细分类目、关键词和排除条件。",
+  "categories": [
+    {"code": "economic_trade", "name": "经济财贸"},
+    {"code": "health", "name": "卫生健康"},
+    {"code": "market_regulation", "name": "市场监管"},
+    {"code": "ecology_environment", "name": "生态环境"},
+    {"code": "public_service", "name": "公共服务"},
+    {"code": "urban_rural_construction", "name": "城乡建设"},
+    {"code": "public_safety", "name": "公共安全"},
+    {"code": "labor_social_security", "name": "劳动和社会保障"},
+    {"code": "transportation", "name": "交通运输"},
+    {"code": "science_education_culture_sports", "name": "科教文体"},
+    {"code": "agriculture_forestry_water_land", "name": "农林水土"},
+    {"code": "urban_management", "name": "城市管理"}
+  ]
+}
