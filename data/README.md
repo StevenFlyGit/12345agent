@@ -2,15 +2,15 @@
 
 ## 目录用途
 
-- `raw/official_work_orders/`：官方 Excel 的本地只读副本，不放录音。
-- `processed/`：由脚本生成的标准化 JSONL。
+- `raw/official_work_orders/`：按类别保存官方 Excel 与配套录音的本地副本。
+- `processed/`：由脚本读取 Excel 后生成的标准化 JSONL。
 - `categories/`：事项分类目录。
 - `departments/`：承办单位职责、排除职责和属地规则。
 - `mock/`：用于开发和测试的脱敏模拟诉求及期望结果。
 
 ## 官方样例
 
-数据来源为比赛官方提供的“信件类别示例工单及录音”。当前准备流程只读取 Excel，不打开、不转写、不分析录音。Excel 第一行是标题，第二行才是字段名。
+数据来源为比赛官方提供的“信件类别示例工单及录音”。原始数据层同时保留 Excel 与配套录音；当前准备流程只匹配和读取 `*.xlsx`，不会打开、转写或分析录音。Excel 第一行是标题，第二行才是字段名。
 
 标准字段包括：`source_id`、`accepted_at`、`source_channel`、`title`、`request_content`、`handling_departments`、`reply_content`、`region`、`category`、`urgent`、`repeat_request` 和 `source_file`。
 
