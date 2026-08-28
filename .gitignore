@@ -23,17 +23,19 @@ frontend/.env.*
 # Coding Agent 本机缓存、会话和私有状态
 .agent/
 
-# 官方原始数据集仅保存在本机
-backend/data/raw/official_work_orders/
+# 官方原始数据集仅保存在本机，保留目录占位文件
+backend/data/raw/official_work_orders/*
+!backend/data/raw/official_work_orders/.gitkeep
 信件类别示例工单及录音/
 
-# 本地生成的历史工单默认不提交
+# 本地生成的历史工单默认不提交，保留目录占位文件
 backend/data/processed/*.jsonl
 !backend/data/processed/.gitkeep
 
-# 后端本地数据库、日志和运行数据
+# 后端本地数据库、日志和运行数据，保留目录占位文件
 backend/uploads/
-backend/storage/
+backend/storage/*
+!backend/storage/.gitkeep
 backend/models/
 *.db
 *.log

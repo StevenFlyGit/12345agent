@@ -1,75 +1,39 @@
-# React + TypeScript + Vite
+# 前端工程
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+`frontend/` 是 12345 Agent 的 React + TypeScript + Vite 前端工程，用于建设录音或文本输入、要素确认、工单审核、分类转派、处理结果录入和回复确认等界面。
 
-Currently, two official plugins are available:
+## 快速开始
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+以下命令均在 `frontend/` 目录中执行：
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+启动后访问 Vite 输出的本地地址，通常是：
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `http://localhost:5173`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 常用脚本
 
+```powershell
+npm run dev      # 启动开发服务器
+npm run build    # TypeScript 检查并生成生产构建
+npm run lint     # 运行 ESLint
+npm run preview  # 本地预览生产构建
 ```
+
+## 环境变量
+
+复制 `.env.example` 为 `.env.local` 后按需修改：
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+前端只能保存非敏感配置，例如后端 API 地址。所有模型 API Key、科大讯飞密钥和其他敏感信息只能保存在后端 `backend/.env`。
+
+## 当前阶段
+
+当前仍处于环境搭建阶段，`src/App.tsx` 保留 Vite 模板页面，用于验证 Node.js、npm、Vite、React 和 TypeScript 工具链是否正常。

@@ -13,6 +13,7 @@
 - `app/repositories/`：SQLite、向量检索和文件数据访问。
 - `data/`：官方数据副本、标准化结果、分类目录、职责规则和 Mock 数据。
 - `scripts/`：离线数据准备脚本。
+- `storage/`：SQLite、上传文件等本机运行数据。
 - `tests/`：后端接口、服务和工作流测试。
 
 ## 配置本机环境变量
@@ -29,7 +30,7 @@ macOS Terminal：
 cp .env.example .env
 ```
 
-只在本机 `.env` 中填写真实密钥，不要修改 `.env.example` 为真实值。
+只在本机 `.env` 中填写真实密钥，不要修改 `.env.example` 为真实值。DeepSeek 等大模型配置使用 `LLM_*` 变量；科大讯飞录音文件转写使用 `KDXF_ASR_*` 变量。
 
 ## 安装、检查和启动
 
@@ -42,12 +43,16 @@ python -m pytest
 python -m uvicorn app.main:app --reload
 ```
 
+启动后访问：
+
+- `http://127.0.0.1:8000/health`
+- `http://127.0.0.1:8000/docs`
+
 ## 准备官方业务数据
 
 把官方 Excel 与配套录音按类别放入 `data/raw/official_work_orders/`，然后执行：
 
 ```powershell
-# data/raw/official_work_orders 同时保存 Excel 与录音；脚本当前只匹配 *.xlsx
 python scripts/prepare_dataset.py data/raw/official_work_orders
 ```
 
