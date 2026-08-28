@@ -76,12 +76,12 @@ def prepare(source_dir: Path, output_file: Path) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="只整理官方 Excel，不处理录音。")
-    # source_dir 是只含官方 Excel 副本的目录。
+    # source_dir 可同时保存 Excel 与录音；本脚本只匹配并处理 *.xlsx。
     parser.add_argument("source_dir", type=Path)
     args = parser.parse_args()
 
-    project_root = Path(__file__).resolve().parents[1]
+    backend_root = Path(__file__).resolve().parents[1]
     prepare(
         args.source_dir,
-        project_root / "data" / "processed" / "work_orders.jsonl",
+        backend_root / "data" / "processed" / "work_orders.jsonl",
     )

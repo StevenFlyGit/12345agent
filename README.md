@@ -1,48 +1,61 @@
 # 12345 热线工单智能生成与转派辅助智能体
 
-本项目用于开发“12345 热线工单智能生成与转派辅助智能体”，基础流程为：输入诉求 → 诉求理解 → 工单生成 → 事项分类与承办单位推荐 → 回复辅助。系统输出仅供人工参考，最终工单内容和转派结果必须由工作人员确认。
+本项目用于开发“12345 热线工单智能生成与转派辅助智能体”，基础闭环为：录音或文本输入 → 诉求理解与要素确认 → 标准化工单生成 → 事项分类与承办单位推荐 → 人工审核 → 处理结果录入 → 回复与回访话术辅助。
 
-## 当前项目骨架
+系统只提供辅助建议，最终工单内容、转派结果和群众回复必须由工作人员审核确认。
 
-- `app/`：FastAPI 接口、数据结构、服务、工作流和数据访问代码。
-- `data/`：官方 Excel 与配套录音副本、标准化结果、分类目录、单位职责规则和 Mock 数据。
-- `scripts/prepare_dataset.py`：只读取 Excel 的数据准备脚本，不处理录音。
-- `tests/`：自动化测试。
-- `storage/`：本机数据库、向量索引和运行文件，不提交 Git。
+## 项目结构
 
-## Windows 快速开始
+```text
+12345agent/
+├─ backend/                    # Python、FastAPI、LangGraph、数据与测试
+│  ├─ app/
+│  │  ├─ api/                 # HTTP 接口与路由
+│  │  ├─ agents/              # Agent 节点、工具调用与模型逻辑
+│  │  ├─ core/                # 配置、日志和通用基础能力
+│  │  ├─ repositories/        # SQLite、向量库等数据访问
+│  │  ├─ schemas/             # Pydantic 输入、输出与状态模型
+│  │  ├─ services/            # 业务服务与模块编排
+│  │  ├─ workflow/            # LangGraph 状态与工作流
+│  │  └─ main.py              # FastAPI 应用入口
+│  ├─ data/                   # 原始数据、标准化数据、目录和 Mock 数据
+│  ├─ scripts/                # 数据准备和维护脚本
+│  ├─ tests/                  # 后端自动化测试
+│  ├─ .env.example            # 后端环境变量模板，不含真实密钥
+│  ├─ requirements.txt        # Python 后端依赖
+│  ├─ verify_env.py           # 后端环境检查
+│  └─ check_deepseek.py       # DeepSeek 最小连通性检查（手动执行）
+├─ frontend/                   # Web 前端工程预留目录
+│  └─ README.md               # 前端初始化边界与后续规划
+├─ .gitignore                  # 全仓库通用忽略规则
+└─ README.md                   # 项目总说明
+```
+
+## 后端快速开始
+
+先激活团队最终选定的 Python 项目环境，再从仓库根目录执行：
 
 ```powershell
-# .conda 是当前项目内的 Conda 环境目录
-conda activate .\.conda
+cd backend
 python -m pip install -r requirements.txt
 python verify_env.py
+python -m pytest
 python -m uvicorn app.main:app --reload
 ```
 
-## macOS 快速开始
+启动后访问：
 
-```bash
-# .conda 是当前项目内的 Conda 环境目录
-conda activate ./.conda
-python -m pip install -r requirements.txt
-python verify_env.py
-python -m uvicorn app.main:app --reload
-```
+- `http://127.0.0.1:8000/health`
+- `http://127.0.0.1:8000/docs`
 
-启动后访问 `http://127.0.0.1:8000/health` 和 `http://127.0.0.1:8000/docs`。
+后端的 `.env`、依赖和运行命令均以 `backend/` 为工作目录。详细说明见 `backend/README.md`。
 
-## 配置大模型
+## 前端状态
 
-`.env.example` 可以提交到仓库，其中只放占位值；本机 `.env` 已使用 DeepSeek 兼容接口作为示例，但 `LLM_API_KEY` 仍是占位值。请自行填写真实密钥，切勿将 `.env`、密钥、包含个人信息的工单或未经授权的录音提交到 Git。
+`frontend/` 目前只保留目录说明，尚未创建 React、TypeScript、Vite、`package.json` 或 `node_modules`。完成前端环境学习后，再在该目录中初始化前端项目，不要把前端依赖安装到仓库根目录或 `backend/`。
 
-## 准备官方 Excel 与录音
+## 数据安全
 
-把官方 Excel 与配套录音按类别目录复制到 `data/raw/official_work_orders/`。当前数据准备脚本只匹配并处理 Excel，不会打开、转写或分析录音。然后执行：
+官方 Excel 与配套录音按类别放入 `backend/data/raw/official_work_orders/`。当前 `prepare_dataset.py` 只匹配并处理 Excel，不会打开、转写或分析录音。
 
-```powershell
-# data/raw/official_work_orders 同时保存官方 Excel 与录音副本；脚本当前只匹配 *.xlsx
-python scripts\prepare_dataset.py data\raw\official_work_orders
-```
-
-标准化结果会写入 `data/processed/work_orders.jsonl`。历史办理单位和历史答复仅作案例参考，不代表当前权责或政策结论。
+真实密钥只写入 `backend/.env`，不得提交 Git。真实姓名、手机号、身份证号、详细地址、未经授权的录音和未脱敏工单不得进入公开仓库。

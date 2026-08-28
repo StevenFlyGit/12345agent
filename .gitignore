@@ -13,23 +13,30 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# 前端依赖、构建产物和本机配置
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
 # Coding Agent 本机缓存、会话和私有状态
 .agent/
 
 # 官方原始数据集仅保存在本机
-data/raw/official_work_orders/
+backend/data/raw/official_work_orders/
 信件类别示例工单及录音/
 
 # 本地生成的历史工单默认不提交
-data/processed/*.jsonl
-!data/processed/.gitkeep
+backend/data/processed/*.jsonl
+!backend/data/processed/.gitkeep
 
-# 本地数据库、日志和运行数据
+# 后端本地数据库、日志和运行数据
+backend/uploads/
+backend/storage/
+backend/models/
 *.db
 *.log
-uploads/
-storage/
-models/
 
 # 编辑器本机配置
 .vscode/settings.json
