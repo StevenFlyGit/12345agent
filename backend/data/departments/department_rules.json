@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.0",
+  "notice": "本文件为 Demo 阶段示例性归纳，依据架构文档第 6 节草稿填充，非现行权威权责。正式版本应以主办方提供目录为准。",
+  "rule_fields": [
+    "category_code",
+    "category_name",
+    "department",
+    "co_departments",
+    "keywords",
+    "responsibilities",
+    "source_name",
+    "version",
+    "note"
+  ],
+  "rules": [
+    {
+      "category_code": "economic_trade",
+      "category_name": "经济财贸",
+      "department": "发改委/商务局（价格与消费）",
+      "co_departments": ["市场监管局", "属地政府"],
+      "keywords": ["价格", "收费", "经营", "消费", "发票", "商家", "商场"],
+      "responsibilities": "负责市场价格行为、消费环境、商贸流通领域群众诉求的牵头处置与政策解释；涉及经营资质与假冒伪劣的，由市场监管部门协同。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "health",
+      "category_name": "卫生健康",
+      "department": "卫健委",
+      "co_departments": ["医疗机构", "医保局"],
+      "keywords": ["医院", "挂号", "诊疗", "医疗", "卫生", "疫苗", "门诊", "护士"],
+      "responsibilities": "负责医疗服务、公共卫生、疫苗接种等卫生健康领域诉求的牵头处置；涉及医疗机构具体服务的，转相关医疗机构办理。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "market_regulation",
+      "category_name": "市场监管",
+      "department": "市场监管局",
+      "co_departments": ["属地政府", "行业主管部门"],
+      "keywords": ["营业执照", "公示", "价格公示", "假冒", "食品", "计量", "电梯", "无证", "经营许可"],
+      "responsibilities": "负责市场主体登记、明码标价、食品安全、计量、特种设备、消费维权等市场监管领域诉求的牵头处置与执法。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "ecology_environment",
+      "category_name": "生态环境",
+      "department": "生态环境局",
+      "co_departments": ["属地政府", "城管局"],
+      "keywords": ["污染", "异味", "扬尘", "油烟", "排污", "噪声", "水体", "废气", "环保"],
+      "responsibilities": "负责工业污染、异味、扬尘、油烟、排污、水体与废气等生态环境领域诉求的牵头核查与执法；生活噪声由城管协同。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "public_service",
+      "category_name": "公共服务",
+      "department": "供水/供电/供气/供热公司、政务服务管理部门",
+      "co_departments": ["行业主管部门"],
+      "keywords": ["水", "电", "气", "供暖", "供热", "宽带", "公交", "自来水", "燃气公司", "供电"],
+      "responsibilities": "负责水电气暖、宽带、公共客运等公用事业服务诉求的转办与协调；由对应运营企业具体办理，行业主管部门监督。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "urban_rural_construction",
+      "category_name": "城乡建设",
+      "department": "住建局（房屋征收主管）",
+      "co_departments": ["属地政府"],
+      "keywords": ["房屋", "施工", "工地", "拆迁", "危房", "路灯", "道路", "物业", "建房", "小区设施"],
+      "responsibilities": "负责房屋建设、施工工地、房屋征收、危房、物业、路灯与小区配套设施等城乡建设领域诉求的牵头处置。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "public_safety",
+      "category_name": "公共安全",
+      "department": "公安局（消防救援、应急管理局）",
+      "co_departments": ["相关运营单位"],
+      "keywords": ["燃气泄漏", "安全", "消防", "治安", "报警", "危化", "防溺水", "抢险", "应急"],
+      "responsibilities": "负责燃气泄漏、消防安全、治安、危化品、防溺水和应急抢险等公共安全领域诉求的紧急处置与牵头协调；涉及运营安全的转相关企业。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "labor_social_security",
+      "category_name": "劳动和社会保障",
+      "department": "人社局（劳动监察/社保）",
+      "co_departments": ["属地政府", "总工会"],
+      "keywords": ["工资", "拖欠", "社保", "工伤", "劳动合同", "退休", "就业", "劳动", "辞职", "仲裁"],
+      "responsibilities": "负责工资拖欠、社保申报、工伤、劳动合同、退休就业等劳动保障领域诉求的牵头处置与监察执法。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "transportation",
+      "category_name": "交通运输",
+      "department": "交通运输局（公交公司、公安交管）",
+      "co_departments": ["公交运营单位"],
+      "keywords": ["公交", "线路", "出租车", "拥堵", "停车", "车站", "道路", "驾照", "交管", "地铁"],
+      "responsibilities": "负责公交线路、出租车、停车、车站、道路通行与交管等交通运输领域诉求的牵头协调；由公交/交管单位具体办理。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "science_education_culture_sports",
+      "category_name": "科教文体",
+      "department": "教育局（文旅局、体育局）",
+      "co_departments": [],
+      "keywords": ["学校", "教育", "补课", "文化", "旅游", "体育", "场馆", "图书馆", "补课班", "景区"],
+      "responsibilities": "负责学校教育、补课培训、文化旅游、体育场馆与景区等科教文体领域诉求的牵头处置。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "agriculture_forestry_water_land",
+      "category_name": "农林水土",
+      "department": "农业农村局（水务局、自然资源局）",
+      "co_departments": [],
+      "keywords": ["农田", "灌溉", "养殖", "土地承包", "河湖", "水库", "耕地", "林", "农业", "畜牧"],
+      "responsibilities": "负责农田灌溉、养殖、土地承包、河湖水库、耕地与林业等农林水土领域诉求的牵头处置。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    },
+    {
+      "category_code": "urban_management",
+      "category_name": "城市管理",
+      "department": "城管局（住建市政）",
+      "co_departments": ["属地政府", "社区", "物业"],
+      "keywords": ["垃圾", "占道经营", "违建", "绿化", "井盖", "噪声", "共享单车", "流浪", "市政"],
+      "responsibilities": "负责垃圾清运、占道经营、违建、绿化、井盖、生活噪声、共享单车与市政设施等城市管理领域诉求的牵头处置。",
+      "source_name": "芜湖市12345政务服务便民热线知识库（示例，非权威）",
+      "version": "demo-0.1",
+      "note": "示例性归纳，正式以主办方目录为准"
+    }
+  ]
+}

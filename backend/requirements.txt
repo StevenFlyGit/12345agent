@@ -1,0 +1,17 @@
+# ===== 后端精简依赖 =====
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2
+pydantic-settings>=2
+python-dotenv>=1
+python-multipart>=0.0.9
+openai>=1
+certifi>=2023.7.22   # httpx/httpcore 传递依赖；显式声明以消除“requires certifi”告警
+
+# ===== 可选增强（不强制，按需安装）=====
+# 语音识别默认走阿里云百炼 Qwen3-ASR（OpenAI 兼容接口，已复用上方 openai），
+# 无需安装 faster-whisper；如需本地模型可自行取消下行注释并改 asr.py。
+# faster-whisper   # 录音本地转写（离线 ASR 备选）；未配置 Qwen3-ASR 时走“精确匹配/模拟”兜底
+# qdrant-client    #  troops 向量检索增强的相似案例 RAG
+# sentence-transformers  # 向量化
+# pandas / openpyxl       # 处理 Excel 源数据（prepare_dataset.py 使用）
