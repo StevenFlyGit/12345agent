@@ -62,10 +62,17 @@
 
 ## 后端快速开始
 
-先激活团队最终选定的 Python 项目环境，再从仓库根目录执行：
+先从仓库根目录进入 `backend/`，用标准库 `venv` 构建 Python 虚拟环境，激活后再安装依赖并启动：
 
 ```powershell
 cd backend
+# 1. 构建 Python 虚拟环境（仅在首次或环境缺失时执行）
+python -m venv venv
+# Windows 激活虚拟环境：
+venv\Scripts\activate
+# macOS / Linux 激活虚拟环境：
+# source venv/bin/activate
+# 2. 安装依赖、检查环境、运行测试与启动服务
 python -m pip install -r requirements.txt
 python verify_env.py
 python -m pytest
