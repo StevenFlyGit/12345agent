@@ -1,3 +1,5 @@
+ 
+
 # 12345 热线工单智能生成与转派辅助智能体
 
 本项目用于开发“12345 热线工单智能生成与转派辅助智能体”，基础闭环为：录音或文本输入 → 诉求理解与要素确认 → 标准化工单生成 → 事项分类与承办单位推荐 → 人工审核 → 处理结果录入 → 回复与回访话术辅助。
@@ -71,13 +73,28 @@ python -m venv venv
 # Windows 激活虚拟环境：
 venv\Scripts\activate
 # macOS / Linux 激活虚拟环境：
-# source venv/bin/activate
+source venv/bin/activate
 # 2. 安装依赖、检查环境、运行测试与启动服务
-python -m pip install -r requirements.txt
+python -m pip install --upgrade pip setuptools wheel #安装基础工具
+python -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/ #安装依赖
+```
+
+初次构建依赖后执行：
+
+```PowerShell
+# 验证环境是否构建完成
+Copy-Item .env.example .env
 python verify_env.py
-python -m pytest
+```
+
+后端服务启动
+
+```PowerShell
+cd backend
+venv\Scripts\activate
 python -m uvicorn app.main:app --reload
 ```
+
 
 启动后访问：
 
@@ -92,21 +109,47 @@ python -m uvicorn app.main:app --reload
 
 ```powershell
 cd frontend
-npm install
-npm run dev
+npm install #前端依赖安装
+npm run build #生产构建检查
+```
+
+前端服务启动
+
+```PowerShell
+cd frontend
+npm run build
 ```
 
 启动后访问 Vite 输出的本地地址，通常是：
 
 - `http://localhost:5173`
 
-生产构建检查：
+前端只允许保存 `VITE_API_BASE_URL` 等非敏感配置，真实模型密钥不得写入前端代码或前端环境变量。
+
+
+
+## 初始数据准备
+
+1. 下载官方数据集：[12345赛题数据集-信件类别示例工单及录音.zip](https://pan.baidu.com/s/1ysOOYqmoAQTr_yJWQLXoyw?pwd=u9ca)，提取码：u9ca。
+
+2. 打开官方数据集并解压，查看其中的 '信件类别示例工单及录音' 文件夹。
+3. 将  '信件类别示例工单及录音' 文件夹 中的所有文件全部复制到项目的 项目的  `backend\data\raw\official_work_orders` 目录中。
+4. 执行以下命令：
 
 ```powershell
-npm run build
+cd backend
+# Windows 激活环境
+.\venv\Scripts\Activate.ps1
+
+# macOS 激活环境
+source venv/bin/activate
+
+python scripts/prepare_dataset.py data/raw/official_work_orders
 ```
 
-前端只允许保存 `VITE_API_BASE_URL` 等非敏感配置，真实模型密钥不得写入前端代码或前端环境变量。
+
+
+
 
 ## 数据安全
 
