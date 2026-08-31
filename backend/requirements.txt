@@ -7,7 +7,7 @@ pydantic-settings
 python-dotenv
 tenacity
 orjson
-aiosqlite
+aiosqlite #异步 SQLite 或 LangGraph checkpoint 需要；
 
 # Excel 与业务数据处理
 pandas
@@ -23,10 +23,11 @@ openai
 langchain-openai
 
 # 录音转写
-faster-whisper
+faster-whisper # 录音本地转写（离线 ASR 备选）
 
 # RAG 与检索
-qdrant-client
+chromadb
+langchain-chroma
 sentence-transformers
 rank-bm25
 
@@ -35,5 +36,4 @@ streamlit
 
 # 测试
 pytest
-pytest-asyncio
 httpx
