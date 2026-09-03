@@ -31,6 +31,13 @@ langchain-chroma
 sentence-transformers
 rank-bm25
 
+# LangChain 文档加载与分片（自采政府文件入库）
+langchain-community
+langchain-text-splitters
+pypdf
+docx2txt
+beautifulsoup4
+
 # 快速演示界面
 streamlit
 

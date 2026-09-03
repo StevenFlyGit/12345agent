@@ -1,9 +1,12 @@
 """分类与承办单位推荐编排：优先 LLM，失败时回退本地引擎。"""
 from __future__ import annotations
 
+from app.chains.classify_chain import invoke_classify_chain
+from app.chains.models import is_available as llm_available
 from app.data import loaders
+from app.rag.retrievers import format_hits_for_prompt, retrieve_for_classification
 from app.schemas.models import ClassificationResult, DepartmentSuggestion, UnderstandingResult
-from app.services import llm, local_engine
+from app.services import local_engine
 
 _NAME_TO_CODE = loaders.category_name_to_code()
 
@@ -16,22 +19,16 @@ def classify(text: str, understanding: UnderstandingResult | None = None) -> Cla
     needs_manual: bool = False
     source = "local-engine"
 
-    if llm.is_available():
-        system = (
-            "你是 12345 热线工单分类助手。请判断群众诉求所属类别，"
-            "仅返回 JSON：category_name(12类之一的中文名)，confidence(0-1浮点)，"
-            "needs_manual(布尔，信息不足或跨类别时为真)。"
-            "12 类为：经济财贸、卫生健康、市场监管、生态环境、公共服务、城乡建设、"
-            "公共安全、劳动和社会保障、交通运输、科教文体、农林水土、城市管理。"
-        )
-        user = f"文本：{text}"
-        raw = llm.chat(system, user)
-        data = llm.extract_json(raw) if raw else None
-        if data and data.get("category_name"):
-            category_name = data["category_name"]
-            category_code = _NAME_TO_CODE.get(category_name)
-            confidence = float(data.get("confidence", 0.0) or 0.0)
-            needs_manual = bool(data.get("needs_manual", False))
+    context = "无"
+    if llm_available():
+        context = format_hits_for_prompt(retrieve_for_classification(text))
+    payload = invoke_classify_chain(text, understanding, context=context)
+    if payload is not None and payload.category_name:
+        category_name = payload.category_name
+        category_code = _NAME_TO_CODE.get(category_name)
+        if category_code is not None:
+            confidence = float(payload.confidence or 0.0)
+            needs_manual = bool(payload.needs_manual)
             source = "llm"
 
     if category_code is None:

@@ -1,8 +1,11 @@
 """回复辅助编排：优先 LLM，失败时回退本地引擎。"""
 from __future__ import annotations
 
+from app.chains.models import is_available as llm_available
+from app.chains.reply_chain import invoke_reply_chain
+from app.rag.retrievers import format_hits_for_prompt, retrieve_for_reply
 from app.schemas.models import ClassificationResult, ReplyResult, UnderstandingResult
-from app.services import llm, local_engine
+from app.services import local_engine
 
 
 def generate_reply(
@@ -11,27 +14,29 @@ def generate_reply(
 ) -> ReplyResult:
     category_name = classification.category_name if classification else None
 
-    if llm.is_available():
-        system = (
-            "你是 12345 热线回复辅助助手。请基于理解与分类给出回复辅助，"
-            "仅返回 JSON：acceptance_notice(受理提示), handling_suggestion(办理建议), "
-            "pre_reply(预回复正文), callback_script(回访话术), "
-            "modification_tips(修改建议数组)。"
+    context = "无"
+    if llm_available():
+        query = "\n".join(
+            part
+            for part in [
+                understanding.transcript,
+                understanding.event or "",
+                understanding.demand or "",
+            ]
+            if part
         )
-        user = (
-            f"理解：{understanding.model_dump_json()}\n"
-            f"分类：{(classification.model_dump_json() if classification else '无')}"
+        context = format_hits_for_prompt(
+            retrieve_for_reply(query, category_name=category_name)
         )
-        raw = llm.chat(system, user)
-        data = llm.extract_json(raw) if raw else None
-        if data and data.get("pre_reply"):
-            return ReplyResult(
-                acceptance_notice=data.get("acceptance_notice", ""),
-                handling_suggestion=data.get("handling_suggestion", ""),
-                pre_reply=data.get("pre_reply", ""),
-                callback_script=data.get("callback_script", ""),
-                modification_tips=data.get("modification_tips") or [],
-                source="llm",
-            )
+    payload = invoke_reply_chain(understanding, classification, context=context)
+    if payload is not None and payload.pre_reply:
+        return ReplyResult(
+            acceptance_notice=payload.acceptance_notice,
+            handling_suggestion=payload.handling_suggestion,
+            pre_reply=payload.pre_reply,
+            callback_script=payload.callback_script,
+            modification_tips=payload.modification_tips,
+            source="llm",
+        )
 
     return local_engine.reply(understanding, category_name, classification)
