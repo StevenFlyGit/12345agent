@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import cases, history, samples
-from app.config import LLM_AVAILABLE
+from app.config import LLM_AVAILABLE, get_workflow_engine
 
 ROOT = Path(__file__).resolve().parents[1]  # 后端项目根（backend/）
 
@@ -42,6 +42,7 @@ def meta():
     return {
         "llm_available": LLM_AVAILABLE,
         "engine_mode": "llm" if LLM_AVAILABLE else "local-engine",
+        "workflow_engine": get_workflow_engine(),
     }
 
 

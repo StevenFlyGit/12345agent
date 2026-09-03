@@ -11,7 +11,12 @@ from app.services import local_engine
 _NAME_TO_CODE = loaders.category_name_to_code()
 
 
-def classify(text: str, understanding: UnderstandingResult | None = None) -> ClassificationResult:
+def classify(
+    text: str,
+    understanding: UnderstandingResult | None = None,
+    *,
+    context: str | None = None,
+) -> ClassificationResult:
     """对文本分类并推荐承办单位。始终依据 department_rules.json 生成建议。"""
     category_code: str | None = None
     category_name: str | None = None
@@ -19,10 +24,12 @@ def classify(text: str, understanding: UnderstandingResult | None = None) -> Cla
     needs_manual: bool = False
     source = "local-engine"
 
-    context = "无"
-    if llm_available():
-        context = format_hits_for_prompt(retrieve_for_classification(text))
-    payload = invoke_classify_chain(text, understanding, context=context)
+    prompt_context = context
+    if prompt_context is None:
+        prompt_context = "无"
+        if llm_available():
+            prompt_context = format_hits_for_prompt(retrieve_for_classification(text))
+    payload = invoke_classify_chain(text, understanding, context=prompt_context)
     if payload is not None and payload.category_name:
         category_name = payload.category_name
         category_code = _NAME_TO_CODE.get(category_name)

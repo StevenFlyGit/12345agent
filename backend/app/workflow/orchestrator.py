@@ -9,6 +9,8 @@ import random
 import string
 from datetime import datetime
 
+from app.config import get_workflow_engine
+from app.graph.workflow import run_case_graph
 from app.schemas.models import (
     CaseInput,
     CaseState,
@@ -32,11 +34,40 @@ def _new_case_id() -> str:
     return f"wo_{ts}_{rand}"
 
 
+def _use_langgraph() -> bool:
+    return get_workflow_engine() == "langgraph"
+
+
+def _run_graph(case: CaseState, target_stage: str) -> CaseState:
+    return run_case_graph(case, target_stage=target_stage)
+
+
 def create_case(
     text: str | None = None,
     audio_filename: str | None = None,
     audio_bytes: bytes | None = None,
 ) -> CaseState:
+    if _use_langgraph():
+        case = CaseState(
+            case_id=_new_case_id(),
+            created_at=_now(),
+            input=CaseInput(text=text, audio_filename=audio_filename),
+            audit_log=[{"action": "create", "at": _now(), "workflow": "langgraph"}],
+        )
+
+        # 二进制音频不写入 checkpoint；先完成转写，再把纯文本交给图。
+        transcript = None
+        transcript_source = None
+        if not (text and text.strip()) and audio_bytes is not None:
+            transcript, transcript_source = asr.transcribe(audio_filename, audio_bytes)
+
+        return run_case_graph(
+            case,
+            target_stage="understand",
+            transcript=transcript,
+            transcript_source=transcript_source,
+        )
+
     # 1) 取得转写文本
     if text and text.strip():
         transcript = text
@@ -70,6 +101,8 @@ def run_understand(case_id: str) -> CaseState:
     case = _require_case(case_id)
     if not case.understanding:
         raise ValueError("案件无转录文本，无法理解")
+    if _use_langgraph():
+        return _run_graph(case, "understand")
     case.understanding = understand_svc.understand(
         case.understanding.transcript, case.understanding.transcript_source
     )
@@ -82,6 +115,11 @@ def run_classify(case_id: str) -> ClassificationResult:
     case = _require_case(case_id)
     if not case.understanding:
         raise ValueError("请先完成诉求理解")
+    if _use_langgraph():
+        result_case = _run_graph(case, "classify")
+        if result_case.classification is None:
+            raise ValueError("分类节点未返回结果")
+        return result_case.classification
     text = case.understanding.transcript
     result = classify_svc.classify(text, case.understanding)
     case.classification = result
@@ -94,6 +132,11 @@ def run_workorder(case_id: str) -> WorkOrder:
     case = _require_case(case_id)
     if not case.understanding:
         raise ValueError("请先完成诉求理解")
+    if _use_langgraph():
+        result_case = _run_graph(case, "workorder")
+        if result_case.work_order is None:
+            raise ValueError("工单节点未返回结果")
+        return result_case.work_order
     text = case.understanding.transcript
     classification = case.classification
     if classification is None:
@@ -111,6 +154,11 @@ def run_reply(case_id: str) -> ReplyResult:
     case = _require_case(case_id)
     if not case.understanding:
         raise ValueError("请先完成诉求理解")
+    if _use_langgraph():
+        result_case = _run_graph(case, "reply")
+        if result_case.reply is None:
+            raise ValueError("回复节点未返回结果")
+        return result_case.reply
     result = reply_svc.generate_reply(case.understanding, case.classification)
     case.reply = result
     case.audit_log.append({"action": "reply", "at": _now()})
@@ -118,9 +166,20 @@ def run_reply(case_id: str) -> ReplyResult:
     return result
 
 
+def run_full_workflow(case_id: str) -> CaseState:
+    """供教学演示或内部调用，一次执行至质量检查 / 人工复核节点。"""
+    case = _require_case(case_id)
+    if not case.understanding:
+        raise ValueError("请先完成诉求理解")
+    if not _use_langgraph():
+        raise ValueError("完整图流程仅在 WORKFLOW_ENGINE=langgraph 时可用")
+    return _run_graph(case, "full")
+
+
 def confirm(case_id: str, operator: str, note: str | None = None) -> CaseState:
     case = _require_case(case_id)
     case.confirmed = True
+    case.next_action = "confirmed"
     case.audit_log.append(
         {
             "action": "confirm",

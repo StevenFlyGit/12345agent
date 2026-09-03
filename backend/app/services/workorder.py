@@ -12,13 +12,17 @@ def generate_work_order(
     text: str,
     understanding: UnderstandingResult,
     classification: ClassificationResult | None = None,
+    *,
+    context: str | None = None,
 ) -> WorkOrder:
     category_name = classification.category_name if classification else None
 
-    context = "无"
-    if llm_available():
-        context = format_hits_for_prompt(retrieve_for_workorder(text))
-    payload = invoke_workorder_chain(text, understanding, classification, context=context)
+    prompt_context = context
+    if prompt_context is None:
+        prompt_context = "无"
+        if llm_available():
+            prompt_context = format_hits_for_prompt(retrieve_for_workorder(text))
+    payload = invoke_workorder_chain(text, understanding, classification, context=prompt_context)
     if payload is not None and payload.title:
         return WorkOrder(
             title=payload.title,

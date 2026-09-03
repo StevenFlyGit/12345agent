@@ -9,6 +9,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.rag.schemas import EvidenceItem
+
 
 class CaseInput(BaseModel):
     """群众诉求录入：文本或录音文件名。"""
@@ -91,6 +93,12 @@ class CaseState(BaseModel):
     reply: Optional[ReplyResult] = None
     confirmed: bool = False
     audit_log: list[dict] = Field(default_factory=list)
+    retrieved_contexts: dict[str, list[EvidenceItem]] = Field(default_factory=dict)
+    rag_status: dict = Field(default_factory=dict)
+    quality_flags: list[str] = Field(default_factory=list)
+    human_review_required: bool = False
+    next_action: Optional[str] = None
+    graph_trace: list[dict] = Field(default_factory=list)
 
 
 class HistoricalCase(BaseModel):

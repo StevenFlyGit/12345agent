@@ -11,24 +11,28 @@ from app.services import local_engine
 def generate_reply(
     understanding: UnderstandingResult,
     classification: ClassificationResult | None = None,
+    *,
+    context: str | None = None,
 ) -> ReplyResult:
     category_name = classification.category_name if classification else None
 
-    context = "无"
-    if llm_available():
-        query = "\n".join(
-            part
-            for part in [
-                understanding.transcript,
-                understanding.event or "",
-                understanding.demand or "",
-            ]
-            if part
-        )
-        context = format_hits_for_prompt(
-            retrieve_for_reply(query, category_name=category_name)
-        )
-    payload = invoke_reply_chain(understanding, classification, context=context)
+    prompt_context = context
+    if prompt_context is None:
+        prompt_context = "无"
+        if llm_available():
+            query = "\n".join(
+                part
+                for part in [
+                    understanding.transcript,
+                    understanding.event or "",
+                    understanding.demand or "",
+                ]
+                if part
+            )
+            prompt_context = format_hits_for_prompt(
+                retrieve_for_reply(query, category_name=category_name)
+            )
+    payload = invoke_reply_chain(understanding, classification, context=prompt_context)
     if payload is not None and payload.pre_reply:
         return ReplyResult(
             acceptance_notice=payload.acceptance_notice,

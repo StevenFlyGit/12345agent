@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     LLM_MODEL: str = ""
     EMBEDDING_MODEL: str = ""
     APP_ENV: str = "development"
+    WORKFLOW_ENGINE: str = "langgraph"
 
     # 语音识别（可选）：阿里云百炼 ASR。
     # 留空（或占位符 replace_me）时 ASR 不可用，自动走精确匹配 / 模拟兜底。
@@ -42,6 +43,12 @@ settings = Settings()
 
 # 仅当配置真实 Key（非占位符 replace_me）时，LLM 才被视为可用。
 LLM_AVAILABLE = bool(settings.LLM_API_KEY) and settings.LLM_API_KEY != "replace_me"
+
+
+def get_workflow_engine() -> str:
+    """仅允许 legacy / langgraph 两种编排模式。"""
+    engine = settings.WORKFLOW_ENGINE.strip().lower()
+    return engine if engine in {"legacy", "langgraph"} else "legacy"
 
 
 def _valid_secret(value: str) -> bool:
