@@ -1361,6 +1361,152 @@ body {
   text-align: center;
 }
 
+.policy-upload-zone {
+  display: flex;
+  flex-direction: column;
+  min-height: 112px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 2px dashed #d0d8e5;
+  border-radius: 22px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.policy-upload-zone:hover,
+.policy-upload-zone:focus-visible,
+.policy-upload-zone.is-dragging {
+  border-color: var(--blue-2);
+  outline: none;
+  background: var(--blue-softer);
+  box-shadow: var(--shadow-glow);
+}
+.policy-upload-zone.is-loading,
+.policy-upload-zone[aria-disabled="true"] {
+  cursor: wait;
+  opacity: 0.78;
+}
+.policy-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.policy-upload-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--blue-light);
+  color: var(--blue-2);
+  font-size: 18px;
+  font-weight: 700;
+}
+.policy-upload-zone strong {
+  font-size: 15.5px;
+  font-weight: 650;
+}
+.policy-upload-zone > span:last-child {
+  color: var(--muted-2);
+  font-size: 13px;
+}
+.upload-result {
+  margin: 0 0 16px;
+}
+
+.policy-meta-dialog {
+  width: min(520px, 100%);
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+}
+.policy-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.policy-dialog-head h2 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 19px;
+}
+.policy-dialog-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.dialog-close {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 21px;
+  line-height: 1;
+}
+.dialog-close:hover {
+  background: var(--blue-light);
+  color: var(--blue-2);
+}
+.dialog-close:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-glow);
+}
+.dialog-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.uploaded-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 20px 0;
+  padding: 10px 12px;
+  border: 1px solid #a6f4c5;
+  border-radius: var(--r-md);
+  background: var(--ok-soft);
+  color: var(--ok-text);
+  font-size: 13px;
+}
+.uploaded-file-chip span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.policy-meta-fields {
+  display: grid;
+  gap: 15px;
+}
+.policy-meta-fields .field {
+  margin: 0;
+}
+.policy-meta-fields .field-label b {
+  color: var(--danger);
+}
+.policy-dialog-error {
+  margin-top: 16px;
+}
+.policy-meta-dialog .dialog-actions {
+  justify-content: flex-end;
+}
+
 .data-back {
   display: flex;
   align-items: center;
@@ -1686,6 +1832,177 @@ body {
   cursor: not-allowed;
 }
 
+
+.policy-files-card {
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.policy-files-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.policy-files-head h2 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 16px;
+}
+.policy-files-head p {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 12.5px;
+}
+.policy-files-count {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+}
+.policy-files-table-wrap {
+  overflow-x: auto;
+}
+.policy-files-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.policy-files-table th {
+  padding: 10px 14px;
+  background: var(--surface-2);
+  color: var(--muted-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: left;
+}
+.policy-files-table th:first-child { width: 31%; }
+.policy-files-table th:nth-child(2) { width: 19%; }
+.policy-files-table th:nth-child(3) { width: 13%; }
+.policy-files-table th:nth-child(4) { width: 14%; }
+.policy-files-table th:nth-child(5) { width: 11%; }
+.policy-files-table th:last-child { width: 12%; }
+.policy-files-table td {
+  padding: 13px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12.5px;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.policy-files-table tbody tr:first-child td { border-top: 0; }
+.policy-source-name,
+.policy-original-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.policy-source-name {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.policy-original-name {
+  margin-top: 4px;
+  color: var(--muted-2);
+  font-size: 11.5px;
+}
+.policy-category-tag {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.policy-file-action { text-align: right; }
+.policy-delete-button {
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.policy-delete-button:hover { text-decoration: underline; }
+.policy-delete-button:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.policy-delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
+.policy-files-empty {
+  display: flex;
+  min-height: 112px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 20px;
+  color: var(--muted-2);
+  text-align: center;
+}
+.policy-files-empty > span {
+  font-size: 22px;
+  line-height: 1;
+}
+.policy-files-empty p { margin: 0; font-size: 12.5px; }
+.policy-files-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  color: var(--danger);
+  font-size: 12.5px;
+}
+.policy-files-error button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue-2);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+}
+.policy-files-skeleton {
+  display: grid;
+  gap: 1px;
+  background: var(--border);
+}
+.policy-files-skeleton span {
+  height: 54px;
+  background: linear-gradient(90deg, var(--card), var(--surface-2), var(--card));
+  background-size: 200% 100%;
+  animation: flow 1.6s linear infinite;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
@@ -1716,6 +2033,58 @@ body {
 }
 
 @media (max-width: 760px) {
+
+  .policy-files-head {
+    align-items: flex-start;
+    padding: 16px;
+  }
+  .policy-files-table-wrap { overflow: visible; }
+  .policy-files-table,
+  .policy-files-table tbody,
+  .policy-files-table tr,
+  .policy-files-table td {
+    display: block;
+    width: 100%;
+  }
+  .policy-files-table thead { display: none; }
+  .policy-files-table tbody {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    background: var(--surface-2);
+  }
+  .policy-files-table tr {
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--card);
+  }
+  .policy-files-table td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 5px 0;
+    border: 0;
+    text-align: right;
+  }
+  .policy-files-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--muted-2);
+    font-size: 11.5px;
+  }
+  .policy-files-table td:first-child {
+    display: block;
+    padding: 0 0 9px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .policy-files-table td:first-child::before { display: none; }
+  .policy-files-table .policy-file-action {
+    justify-content: flex-end;
+    padding-top: 9px;
+  }
   .topbar {
     height: auto;
     min-height: 60px;

@@ -9,8 +9,6 @@ from functools import lru_cache
 from pathlib import Path
 
 from langchain_core.embeddings import Embeddings
-from sentence_transformers import SentenceTransformer
-
 from app.config import settings
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +33,9 @@ class SentenceTransformerEmbeddings(Embeddings):
     """让 sentence-transformers 适配 LangChain Embeddings 接口。"""
 
     def __init__(self, model_name: str | None = None):
+        # 延迟加载重量级依赖，普通 API 启动和不使用向量模型的测试无需初始化 torch。
+        from sentence_transformers import SentenceTransformer
+
         self.model_name = model_name or resolve_embedding_model()
         self.model = SentenceTransformer(self.model_name)
 

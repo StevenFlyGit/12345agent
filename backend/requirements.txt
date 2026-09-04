@@ -28,6 +28,7 @@ faster-whisper # 录音本地转写（离线 ASR 备选）
 # RAG 与检索
 chromadb
 langchain-chroma
+torch==2.8.0 # Windows 上较新版本可能触发 c10.dll 初始化失败
 sentence-transformers
 rank-bm25
 

@@ -14,7 +14,7 @@ from app.rag.vectorstore import POLICY_COLLECTION
 ROOT = Path(__file__).resolve().parents[2]
 POLICY_ROOT = ROOT / "data" / "raw" / "public_policies"
 SUPPORTED_SUFFIXES = {".txt", ".md", ".html", ".htm", ".json", ".pdf", ".docx"}
-REQUIRED_META_FIELDS = ["source_name", "source_url", "publisher", "collected_at", "usage_scope"]
+REQUIRED_META_FIELDS = ["source_name", "publisher", "category_name"]
 
 
 def meta_path_for(file_path: Path) -> Path:
@@ -30,25 +30,38 @@ def _is_policy_candidate(file_path: Path) -> bool:
     )
 
 
-def _build_loader(file_path: Path):
-    """按文件类型创建 LangChain 官方/社区 DocumentLoader。"""
+def _load_file(file_path: Path) -> tuple[str, list[Document]]:
+    """按文件类型读取正文，返回加载器名称和原始 Document。"""
     suffix = file_path.suffix.lower()
     if suffix in {".txt", ".md", ".json"}:
-        from langchain_community.document_loaders import TextLoader
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            content = file_path.read_text(encoding="gb18030")
+        return "TextLoader", [Document(page_content=content)]
 
-        return TextLoader(str(file_path), encoding="utf-8", autodetect_encoding=True)
     if suffix == ".pdf":
-        from langchain_community.document_loaders import PyPDFLoader
+        from pypdf import PdfReader
 
-        return PyPDFLoader(str(file_path))
+        reader = PdfReader(str(file_path))
+        documents = [
+            Document(page_content=page.extract_text() or "", metadata={"page": index})
+            for index, page in enumerate(reader.pages)
+        ]
+        return "PyPDFLoader", documents
+
     if suffix == ".docx":
-        from langchain_community.document_loaders import Docx2txtLoader
+        import docx2txt
 
-        return Docx2txtLoader(str(file_path))
+        return "Docx2txtLoader", [Document(page_content=docx2txt.process(str(file_path)) or "")]
+
     if suffix in {".html", ".htm"}:
-        from langchain_community.document_loaders import BSHTMLLoader
+        from bs4 import BeautifulSoup
 
-        return BSHTMLLoader(str(file_path), open_encoding="utf-8")
+        html = file_path.read_text(encoding="utf-8", errors="replace")
+        content = BeautifulSoup(html, "html.parser").get_text("\n", strip=True)
+        return "BSHTMLLoader", [Document(page_content=content)]
+
     raise ValueError(f"暂不支持的文件类型：{file_path.suffix}")
 
 
@@ -122,7 +135,7 @@ def load_raw_policy_documents(root: Path | None = None) -> list[Document]:
             continue
         try:
             meta = PolicySourceMeta.model_validate_json(meta_path.read_text(encoding="utf-8"))
-            loaded_docs = _build_loader(file_path).load()
+            loader_name, loaded_docs = _load_file(file_path)
         except Exception:
             continue
 
@@ -131,7 +144,7 @@ def load_raw_policy_documents(root: Path | None = None) -> list[Document]:
                 **meta.model_dump(),
                 "source_file": file_path.name,
                 "relative_path": str(file_path.relative_to(base)),
-                "loader": _build_loader(file_path).__class__.__name__,
+                "loader": loader_name,
                 "loaded_doc_index": loaded_index,
                 "is_chunk": False,
             }

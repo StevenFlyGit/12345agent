@@ -1,13 +1,32 @@
-import { KeyboardEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  DragEvent,
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   DepartmentRule,
   DepartmentRuleUpdate,
   DepartmentRulesDocument,
+  PolicyFileItem,
+  PolicyMetadataInput,
+  PolicyUploadTicket,
+  cancelPolicyUpload,
+  completePolicyUpload,
   deleteDepartmentRule,
+  deletePolicyFile,
   getDepartmentRules,
+  getPolicyFiles,
   updateDepartmentRule,
+  uploadPolicyFile,
 } from "../api";
+import DeletePolicyDialog from "./DeletePolicyDialog";
+import PolicyFileList from "./PolicyFileList";
 
 interface TagEditorProps {
   label: string;
@@ -107,6 +126,37 @@ export default function DataManagePage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "danger"; text: string } | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [draggingFile, setDraggingFile] = useState(false);
+  const [policyUpload, setPolicyUpload] = useState<PolicyUploadTicket | null>(null);
+  const [policyDraft, setPolicyDraft] = useState<PolicyMetadataInput | null>(null);
+  const [indexingPolicy, setIndexingPolicy] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadMessage, setUploadMessage] = useState<{
+    type: "ok" | "danger";
+    text: string;
+  } | null>(null);
+  const [policyFiles, setPolicyFiles] = useState<PolicyFileItem[]>([]);
+  const [policyFilesTotal, setPolicyFilesTotal] = useState(0);
+  const [loadingPolicyFiles, setLoadingPolicyFiles] = useState(true);
+  const [policyFilesError, setPolicyFilesError] = useState("");
+  const [policyToDelete, setPolicyToDelete] = useState<PolicyFileItem | null>(null);
+  const [deletingPolicyId, setDeletingPolicyId] = useState("");
+
+  const loadPolicyFiles = async () => {
+    setLoadingPolicyFiles(true);
+    setPolicyFilesError("");
+    try {
+      const result = await getPolicyFiles();
+      setPolicyFiles(result.items);
+      setPolicyFilesTotal(result.total);
+    } catch (error) {
+      setPolicyFilesError(`政策文件列表加载失败：${errorMessage(error)}`);
+    } finally {
+      setLoadingPolicyFiles(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -126,7 +176,10 @@ export default function DataManagePage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    void loadPolicyFiles();
+  }, []);
 
   const selected = useMemo(
     () => document?.rules.find((rule) => rule.category_code === selectedCode) || null,
@@ -148,6 +201,14 @@ export default function DataManagePage() {
         .includes(normalized)
     );
   }, [document, keyword]);
+
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set((document?.rules || []).map((rule) => rule.category_name))
+      ),
+    [document]
+  );
 
   const selectRule = (code: string) => {
     setSelectedCode(code);
@@ -243,6 +304,114 @@ export default function DataManagePage() {
     }
   };
 
+  const startPolicyUpload = async (file?: File) => {
+    if (!file || uploading || policyUpload) return;
+    setUploading(true);
+    setUploadMessage(null);
+    setUploadError("");
+    try {
+      const ticket = await uploadPolicyFile(file);
+      setPolicyUpload(ticket);
+      setPolicyDraft({
+        source_name: ticket.source_name,
+        publisher: "",
+        category_name: "",
+      });
+    } catch (error) {
+      setUploadMessage({
+        type: "danger",
+        text: `上传失败：${errorMessage(error)}`,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handlePolicyFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    void startPolicyUpload(file);
+  };
+
+  const handlePolicyDrop = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    setDraggingFile(false);
+    void startPolicyUpload(event.dataTransfer.files?.[0]);
+  };
+
+  const closePolicyDialog = async () => {
+    if (indexingPolicy) return;
+    const ticket = policyUpload;
+    setPolicyUpload(null);
+    setPolicyDraft(null);
+    setUploadError("");
+    if (ticket) {
+      try {
+        await cancelPolicyUpload(ticket.upload_id);
+      } catch (error) {
+        setUploadMessage({
+          type: "danger",
+          text: `取消上传失败：${errorMessage(error)}`,
+        });
+      }
+    }
+  };
+
+  const submitPolicyMetadata = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!policyUpload || !policyDraft) return;
+    const metadata = {
+      source_name: policyDraft.source_name.trim(),
+      publisher: policyDraft.publisher.trim(),
+      category_name: policyDraft.category_name.trim(),
+    };
+    if (!metadata.source_name || !metadata.publisher || !metadata.category_name) {
+      setUploadError("请填写文件名称、发布单位和所属分类。");
+      return;
+    }
+
+    setIndexingPolicy(true);
+    setUploadError("");
+    try {
+      const result = await completePolicyUpload(policyUpload.upload_id, metadata);
+      setPolicyUpload(null);
+      setPolicyDraft(null);
+      setUploadMessage({ type: "ok", text: result.message || "上传成功" });
+      await loadPolicyFiles();
+    } catch (error) {
+      setUploadError(errorMessage(error));
+    } finally {
+      setIndexingPolicy(false);
+    }
+  };
+
+  const removePolicyFile = async () => {
+    if (!policyToDelete || deletingPolicyId) return;
+    const item = policyToDelete;
+    setDeletingPolicyId(item.upload_id);
+    setUploadMessage(null);
+    try {
+      const result = await deletePolicyFile(item.upload_id);
+      setPolicyFiles((current) =>
+        current.filter((policy) => policy.upload_id !== item.upload_id)
+      );
+      setPolicyFilesTotal((current) => Math.max(0, current - 1));
+      setPolicyToDelete(null);
+      setUploadMessage({
+        type: "ok",
+        text: `${result.message}，相关检索索引已同步清理。`,
+      });
+    } catch (error) {
+      setPolicyToDelete(null);
+      setUploadMessage({
+        type: "danger",
+        text: `删除失败：${errorMessage(error)}`,
+      });
+    } finally {
+      setDeletingPolicyId("");
+    }
+  };
+
   return (
     <main>
       <div className="data-back">
@@ -251,6 +420,73 @@ export default function DataManagePage() {
           首页 / <b>数据管理</b>
         </span>
       </div>
+
+      <section
+        className={`policy-upload-zone${draggingFile ? " is-dragging" : ""}${
+          uploading ? " is-loading" : ""
+        }`}
+        role="button"
+        tabIndex={uploading || policyUpload ? -1 : 0}
+        aria-disabled={uploading || !!policyUpload}
+        aria-label="上传政策文件"
+        onClick={() => {
+          if (!uploading && !policyUpload) uploadInputRef.current?.click();
+        }}
+        onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
+          if ((event.key === "Enter" || event.key === " ") && !uploading && !policyUpload) {
+            event.preventDefault();
+            uploadInputRef.current?.click();
+          }
+        }}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          if (!uploading && !policyUpload) setDraggingFile(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setDraggingFile(false);
+          }
+        }}
+        onDrop={handlePolicyDrop}
+      >
+        <input
+          ref={uploadInputRef}
+          className="policy-file-input"
+          type="file"
+          accept=".pdf,.docx,.txt,.md,.html,.htm,.json"
+          onChange={handlePolicyFileChange}
+          tabIndex={-1}
+        />
+        <span className="policy-upload-icon" aria-hidden="true">
+          {uploading ? <span className="small-spinner" /> : "↑"}
+        </span>
+        <strong>
+          {uploading ? "正在上传文件…" : "拖拽政策文件到此处，或点击选择上传"}
+        </strong>
+        <span>
+          支持 PDF、DOCX、TXT、Markdown、HTML、JSON · 上传后补充必要信息
+        </span>
+      </section>
+
+      {uploadMessage && (
+        <div className={`alert ${uploadMessage.type} upload-result`} role="status">
+          <span className="alert-ico" aria-hidden="true">
+            {uploadMessage.type === "ok" ? "✓" : "⚠"}
+          </span>
+          <span>{uploadMessage.text}</span>
+        </div>
+      )}
+
+      <PolicyFileList
+        items={policyFiles}
+        total={policyFilesTotal}
+        loading={loadingPolicyFiles}
+        error={policyFilesError}
+        deletingId={deletingPolicyId}
+        onRetry={() => void loadPolicyFiles()}
+        onDelete={setPolicyToDelete}
+      />
 
       {document && (
         <div className="file-info" role="status">
@@ -495,6 +731,123 @@ export default function DataManagePage() {
           )}
         </section>
       </div>
+
+      {policyUpload && policyDraft && (
+        <div className="modal-backdrop" role="presentation">
+          <form
+            className="policy-meta-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="policy-meta-title"
+            onSubmit={submitPolicyMetadata}
+          >
+            <div className="policy-dialog-head">
+              <div>
+                <h2 id="policy-meta-title">补充政策文件信息</h2>
+                <p>文件已上传，请填写以下三项必填信息。</p>
+              </div>
+              <button
+                className="dialog-close"
+                type="button"
+                aria-label="关闭"
+                onClick={() => void closePolicyDialog()}
+                disabled={indexingPolicy}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="uploaded-file-chip">
+              <span aria-hidden="true">✓</span>
+              <span>{policyUpload.filename}</span>
+            </div>
+
+            <div className="policy-meta-fields">
+              <div className="field">
+                <label className="field-label" htmlFor="policy-source-name">
+                  文件名称 <b>*</b>
+                </label>
+                <input
+                  className="field-input"
+                  id="policy-source-name"
+                  value={policyDraft.source_name}
+                  onChange={(event) =>
+                    setPolicyDraft({ ...policyDraft, source_name: event.target.value })
+                  }
+                  maxLength={200}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="policy-publisher">
+                  发布单位 <b>*</b>
+                </label>
+                <input
+                  className="field-input"
+                  id="policy-publisher"
+                  value={policyDraft.publisher}
+                  onChange={(event) =>
+                    setPolicyDraft({ ...policyDraft, publisher: event.target.value })
+                  }
+                  maxLength={200}
+                  placeholder="请输入政策发布单位"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="policy-category">
+                  所属分类 <b>*</b>
+                </label>
+                <select
+                  className="field-input"
+                  id="policy-category"
+                  value={policyDraft.category_name}
+                  onChange={(event) =>
+                    setPolicyDraft({ ...policyDraft, category_name: event.target.value })
+                  }
+                  required
+                >
+                  <option value="">请选择工单分类</option>
+                  {categoryOptions.map((category) => (
+                    <option value={category} key={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {uploadError && (
+              <div className="alert danger policy-dialog-error" role="alert">
+                <span className="alert-ico" aria-hidden="true">⚠</span>
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            <div className="dialog-actions">
+              <button
+                className="btn-ghost"
+                type="button"
+                onClick={() => void closePolicyDialog()}
+                disabled={indexingPolicy}
+              >
+                取消
+              </button>
+              <button className="btn-primary" type="submit" disabled={indexingPolicy}>
+                {indexingPolicy ? "正在保存…" : "确认上传"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {policyToDelete && (
+        <DeletePolicyDialog
+          item={policyToDelete}
+          deleting={deletingPolicyId === policyToDelete.upload_id}
+          onCancel={() => setPolicyToDelete(null)}
+          onConfirm={() => void removePolicyFile()}
+        />
+      )}
 
       {confirmDelete && selected && (
         <div className="modal-backdrop" role="presentation">

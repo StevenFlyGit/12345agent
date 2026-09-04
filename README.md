@@ -47,6 +47,95 @@
 
 > `GET /api/cases` 请求失败时，首页会显示前端内置的演示数据，并标记数据来源为“本地演示数据”。
 
+## 数据管理页面接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/departments/rules` | 显示部门规则文件信息、规则数量和规则列表 |
+| PUT | `/api/departments/rules/{code}` | 保存当前部门规则，并同步更新规则检索索引 |
+| DELETE | `/api/departments/rules/{code}` | 删除当前部门规则，并同步更新规则检索索引 |
+| POST | `/api/policies/uploads` | 上传政策文件，成功后返回上传凭据并弹出必填信息框 |
+| POST | `/api/policies/uploads/{upload_id}/complete` | 提交文件名称、发布单位和所属分类，增量写入 `policy_docs` |
+| DELETE | `/api/policies/uploads/{upload_id}` | 用户取消填写时删除尚未完成的暂存文件 |
+| GET | `/api/policies/files` | 分页获取已完成入库的政策文件列表，不返回文件正文 |
+| DELETE | `/api/policies/files/{upload_id}` | 删除已上传的政策文件、元数据和对应的 `policy_docs` 向量 |
+
+### 政策文件上传流程
+
+政策文件上传分为两个步骤：
+
+1. 调用 `POST /api/policies/uploads` 上传原文件，支持 PDF、DOCX、TXT、Markdown、HTML 和 JSON，单个文件最大 20 MB。接口返回 `upload_id`、`filename` 和根据文件名生成的默认 `source_name`。
+2. 调用 `POST /api/policies/uploads/{upload_id}/complete`，提交 `source_name`、`publisher` 和 `category_name`。后端保存元数据、拆分文件内容并增量写入 Chroma 的 `policy_docs` collection。
+
+第二步尚未完成时，前端关闭信息填写弹窗会调用 `DELETE /api/policies/uploads/{upload_id}` 清理暂存文件。完成入库后如需删除，应调用 `/api/policies/files/{upload_id}`，两个 DELETE 接口的用途不同。
+
+补充信息请求示例：
+
+```json
+{
+  "source_name": "芜湖市房屋使用安全管理条例实施细则",
+  "publisher": "芜湖市人民政府",
+  "category_name": "城乡建设"
+}
+```
+
+### 已上传政策文件列表
+
+```http
+GET /api/policies/files?page=1&page_size=20
+```
+
+| 查询参数 | 默认值 | 限制 | 说明 |
+| --- | --- | --- | --- |
+| `page` | `1` | 大于等于 1 | 页码 |
+| `page_size` | `20` | 1～100 | 每页记录数 |
+
+响应示例：
+
+```json
+{
+  "items": [
+    {
+      "upload_id": "41502dd295d14e6c9cc2a53df84f3aa1",
+      "filename": "芜湖市人民政府关于印发通知.docx",
+      "source_name": "芜湖市房屋使用安全管理条例实施细则",
+      "publisher": "芜湖市人民政府",
+      "category_name": "城乡建设",
+      "uploaded_at": "2026-09-04T21:36:55+08:00",
+      "file_size": 84664
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 20
+}
+```
+
+列表接口只扫描 `backend/data/raw/public_policies/uploads/{upload_id}` 中已经完成入库的文件，返回文件级元数据，不读取或返回政策正文。数据管理页面显示文件名称、原始文件名、发布单位、所属分类、上传日期和文件大小，不提供内容详情或下载入口。
+
+### 删除已上传政策文件
+
+```http
+DELETE /api/policies/files/{upload_id}
+```
+
+成功响应：
+
+```json
+{
+  "message": "政策文件已删除",
+  "deleted_vectors": 6
+}
+```
+
+删除接口仅作用于用户上传目录。后端先将目标目录移动到临时回收位置，再按向量 metadata 中的 `upload_id` 删除 `policy_docs` 记录；向量删除失败时会恢复文件目录。接口状态说明：
+
+| 状态码 | 说明 |
+| --- | --- |
+| `200` | 文件、元数据和对应向量删除成功 |
+| `404` | `upload_id` 格式不正确，或政策文件不存在/已经删除 |
+| `500` | 文件或向量索引删除失败，前端保留当前列表项并显示错误信息 |
+
 ## 一、目录结构（单仓库）
 
 ```
@@ -156,6 +245,37 @@ npm run build
 - API 文档：[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - 健康检查：[http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 - 引擎模式：[http://127.0.0.1:8000/api/meta](http://127.0.0.1:8000/api/meta)
+
+
+
+###  3.  初始数据准备
+
+1. 下载官方数据集：[12345赛题数据集-信件类别示例工单及录音.zip](https://pan.baidu.com/s/1ysOOYqmoAQTr_yJWQLXoyw?pwd=u9ca)，提取码：u9ca。
+
+2. 打开官方数据集并解压，查看其中的 '信件类别示例工单及录音' 文件夹。
+3. 将  '信件类别示例工单及录音' 文件夹 中的所有文件全部复制到项目的 项目的  `backend\data\raw\official_work_orders` 目录中。
+4. 执行以下命令：
+
+```powershell
+cd backend
+# Windows 激活环境
+.\venv\Scripts\Activate.ps1
+
+# macOS 激活环境
+source venv/bin/activate
+
+python scripts/prepare_dataset.py data/raw/official_work_orders
+```
+
+
+
+### 4. 数据安全
+
+官方 Excel 与配套录音按类别放入 `backend/data/raw/official_work_orders/`。当前 `prepare_dataset.py` 只匹配并处理 Excel，不会打开、转写或分析录音。
+
+真实密钥只写入 `backend/.env`，不得提交 Git。真实姓名、手机号、身份证号、详细地址、未经授权的录音和未脱敏工单不得进入公开仓库。
+
+
 
 ## 三、LLM 配置
 

@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 
-from app.api import cases, departments, history, samples
+from app.api import cases, departments, history, policies, samples
 from app.config import LLM_AVAILABLE, get_workflow_engine
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +46,7 @@ app.include_router(cases.router)
 app.include_router(samples.router)
 app.include_router(history.router)
 app.include_router(departments.router)
+app.include_router(policies.router)
 
 
 def _find_dist() -> Path | None:

@@ -79,10 +79,8 @@ def test_policy_source_validation(tmp_path):
         json.dumps(
             {
                 "source_name": "测试政策",
-                "source_url": "https://example.com/policy",
                 "publisher": "测试部门",
-                "collected_at": "2026-09-02",
-                "usage_scope": "仅用于测试",
+                "category_name": "城乡建设",
             },
             ensure_ascii=False,
         ),

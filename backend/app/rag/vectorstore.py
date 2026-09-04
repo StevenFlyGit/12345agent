@@ -1,8 +1,22 @@
 """Chroma 向量库封装。"""
 from __future__ import annotations
 
+import ctypes
+import os
 from pathlib import Path
 from typing import Iterable
+
+# Anaconda 3.11.3 bundles an old msvcp140.dll beside python.exe. Newer
+# Chroma native extensions can load that copy first and crash the process on
+# the first write. Load the current Windows runtime before importing Chroma.
+if os.name == "nt":
+    system_runtime = (
+        Path(os.environ.get("SystemRoot", r"C:\Windows"))
+        / "System32"
+        / "msvcp140.dll"
+    )
+    if system_runtime.is_file():
+        ctypes.WinDLL(str(system_runtime))
 
 import chromadb
 from langchain_core.documents import Document

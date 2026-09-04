@@ -108,6 +108,35 @@ export type DepartmentRuleUpdate = Pick<
   "category_name" | "department" | "co_departments" | "keywords" | "responsibilities"
 >;
 
+export interface PolicyUploadTicket {
+  upload_id: string;
+  filename: string;
+  source_name: string;
+}
+
+export interface PolicyMetadataInput {
+  source_name: string;
+  publisher: string;
+  category_name: string;
+}
+
+export interface PolicyFileItem {
+  upload_id: string;
+  filename: string;
+  source_name: string;
+  publisher: string;
+  category_name: string;
+  uploaded_at: string;
+  file_size: number;
+}
+
+export interface PolicyFileListResponse {
+  items: PolicyFileItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export interface TextSample {
   type: "text";
   id?: string;
@@ -197,6 +226,42 @@ export async function confirmCase(
 
 export async function recordHandling(id: string, text: string): Promise<CaseState> {
   const r = await http.post(`/api/cases/${id}/handling`, { text });
+  return r.data;
+}
+
+export async function uploadPolicyFile(file: File): Promise<PolicyUploadTicket> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const r = await http.post("/api/policies/uploads", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return r.data;
+}
+
+export async function completePolicyUpload(
+  uploadId: string,
+  metadata: PolicyMetadataInput
+): Promise<{ message: string }> {
+  const r = await http.post(
+    `/api/policies/uploads/${encodeURIComponent(uploadId)}/complete`,
+    metadata
+  );
+  return r.data;
+}
+
+export async function cancelPolicyUpload(uploadId: string): Promise<void> {
+  await http.delete(`/api/policies/uploads/${encodeURIComponent(uploadId)}`);
+}
+
+export async function getPolicyFiles(): Promise<PolicyFileListResponse> {
+  const r = await http.get("/api/policies/files", { params: { page: 1, page_size: 100 } });
+  return r.data;
+}
+
+export async function deletePolicyFile(
+  uploadId: string
+): Promise<{ message: string; deleted_vectors: number }> {
+  const r = await http.delete(`/api/policies/files/${encodeURIComponent(uploadId)}`);
   return r.data;
 }
 

@@ -18,6 +18,7 @@ __pycache__/
 
 # 官方原始数据集仅保存在本机（体积大，不入库）
 backend/data/raw/official_work_orders/
+backend/data/raw/public_policies
 信件类别示例工单及录音/
 
 # 本地数据库、日志与运行数据

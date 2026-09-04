@@ -32,10 +32,10 @@ class PolicySourceMeta(BaseModel):
 
     source_name: str
     source_url: str | None = None
-    publisher: str | None = None
+    publisher: str
     published_at: str | None = None
     collected_at: str | None = None
-    category_name: str | None = None
+    category_name: str
     doc_type: str = "policy"
     sensitive_level: str = "public_demo"
     usage_scope: str | None = None
