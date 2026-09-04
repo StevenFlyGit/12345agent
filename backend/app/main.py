@@ -1,32 +1,27 @@
-"""FastAPI 应用入口：装配路由、CORS、静态托管与 /health。
-
-启动顺序：
-  1. 创建 app，配置全局 CORS（演示用 allow all）。
-  2. 挂载业务路由 /api/*（必须在静态文件之前，避免被覆盖）。
-  3. 尝试定位前端构建产物 dist，找到则用 StaticFiles(html=True) 挂载到 "/"，
-     并提供 /api/meta 暴露引擎模式；找不到则 "/" 返回提示文字。
-"""
+"""FastAPI 应用入口：装配路由、CORS、静态托管与 /health。"""
 from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
-from fastapi.staticfiles import StaticFiles
 
-from app.api import cases, history, samples
+from app.api import cases, departments, history, samples
 from app.config import LLM_AVAILABLE, get_workflow_engine
 
-ROOT = Path(__file__).resolve().parents[1]  # 后端项目根（backend/）
+ROOT = Path(__file__).resolve().parents[1]
 
 app = FastAPI(title="12345 热线工单智能辅助 API", version="demo-0.1")
 
-# 全局 CORS（演示用）
+# 本地开发前端地址；生产构建由本应用同源托管。
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -46,35 +41,51 @@ def meta():
     }
 
 
-# 业务路由（必须早于静态挂载）
+# 业务接口必须先于 SPA 回退注册。
 app.include_router(cases.router)
 app.include_router(samples.router)
 app.include_router(history.router)
+app.include_router(departments.router)
 
 
 def _find_dist() -> Path | None:
     candidates = [
-        ROOT.parent / "frontend" / "dist",   # 合并后结构：仓库根/frontend/dist
-        ROOT / "frontend_dist",              # 兼容旧命名
+        ROOT.parent / "frontend" / "dist",
+        ROOT / "frontend_dist",
     ]
-    for c in candidates:
-        c = c.resolve()
-        if (c / "index.html").exists():
-            return c
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if (resolved / "index.html").exists():
+            return resolved
     return None
 
 
 _dist = _find_dist()
 if _dist is not None:
-    app.mount("/", StaticFiles(directory=str(_dist), html=True), name="static")
 
-    @app.get("/")
-    def index():
+    @app.get("/{full_path:path}")
+    def spa_fallback(full_path: str):
+        # 未定义的 API 始终返回 404，只有页面路径才回退到 React 入口。
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API 路径不存在")
+
+        candidate = (_dist / full_path).resolve()
+        try:
+            candidate.relative_to(_dist)
+            inside_dist = True
+        except ValueError:
+            inside_dist = False
+
+        if full_path and inside_dist and candidate.is_file():
+            return FileResponse(str(candidate))
         return FileResponse(str(_dist / "index.html"))
 
-    print(f"[前端托管] 已挂载静态资源：{_dist}")
+    print(f"[前端托管] 已启用 SPA 回退：{_dist}")
 else:
 
     @app.get("/")
     def index():
-        return PlainTextResponse("前端未构建，请先在前端目录执行 npm run build（frontend/ 目录），或确认 frontend/dist 已存在。")
+        return PlainTextResponse(
+            "前端未构建，请先在 frontend/ 目录执行 npm run build，"
+            "或确认 frontend/dist 已存在。"
+        )

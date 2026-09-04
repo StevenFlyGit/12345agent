@@ -1,127 +1,244 @@
 import { useEffect, useState } from "react";
-import Stepper from "./components/Stepper";
+import {
+  BrowserRouter,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import Stepper, { STEPS } from "./components/Stepper";
 import InputPanel from "./components/InputPanel";
 import UnderstandingPanel from "./components/UnderstandingPanel";
 import WorkOrderPanel from "./components/WorkOrderPanel";
 import ClassificationPanel from "./components/ClassificationPanel";
 import ReplyPanel from "./components/ReplyPanel";
 import ConfirmPanel from "./components/ConfirmPanel";
+import HomePage from "./components/HomePage";
+import DataManagePage from "./components/DataManagePage";
+import { derivePipelineStep } from "./components/DashboardCharts";
 import {
   CaseState,
+  getCase,
   getMeta,
   runClassify,
   runReply,
   runWorkOrder,
 } from "./api";
 
-export default function App() {
+function Header({
+  engineMode,
+}: {
+  engineMode: string;
+}) {
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    "nav-tab" + (isActive ? " active" : "");
+
+  return (
+    <header className="topbar">
+      <div className="topbar-inner">
+        <div className="brand-group">
+          <NavLink className="brand" to="/" aria-label="返回首页">
+            <span className="brand-logo" aria-hidden="true">政</span>
+            <span>
+              12345 热线工单智能辅助工作台
+              <span className="brand-sub">Gov Hotline Copilot</span>
+            </span>
+          </NavLink>
+          <nav className="nav-tabs" aria-label="主导航">
+            <NavLink className={linkClass} to="/" end>首页</NavLink>
+            <NavLink className={linkClass} to="/pipeline">工单工作台</NavLink>
+            <NavLink className={linkClass} to="/data">数据管理</NavLink>
+          </nav>
+        </div>
+        <div className="top-right">
+          <span
+            className={"engine-badge " + (engineMode === "llm" ? "llm" : "local")}
+            title={engineMode === "llm" ? "大模型引擎正在运行" : "当前使用本地确定性引擎"}
+          >
+            <span className="dot" aria-hidden="true" />
+            <span className="engine-text">
+              {engineMode === "llm" ? "大模型引擎 · 运行中" : "本地确定性引擎"}
+            </span>
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function PipelinePage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const caseId = searchParams.get("case");
   const [step, setStep] = useState(0);
   const [caseState, setCaseState] = useState<CaseState | null>(null);
-  const [engineMode, setEngineMode] = useState<string>("local-engine");
   const [busy, setBusy] = useState(false);
+  const [takeoverLoading, setTakeoverLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    getMeta()
-      .then((m) => setEngineMode(m.engine_mode))
-      .catch(() => setEngineMode("local-engine"));
-  }, []);
+    let cancelled = false;
+    if (!caseId) {
+      setCaseState(null);
+      setStep(0);
+      setError("");
+      return;
+    }
 
-  const onCreated = (c: CaseState) => {
-    setCaseState(c);
-    // 以首次理解结果的 source 判定引擎模式（更准确）
-    if (c.understanding) setEngineMode(c.understanding.source);
+    setTakeoverLoading(true);
+    setError("");
+    getCase(caseId)
+      .then((item) => {
+        if (cancelled) return;
+        setCaseState(item);
+        setStep(derivePipelineStep(item));
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        const message =
+          (loadError as { response?: { data?: { detail?: string } } }).response
+            ?.data?.detail || "无法加载该工单，请返回首页重新选择。";
+        setCaseState(null);
+        setStep(0);
+        setError(message);
+      })
+      .finally(() => {
+        if (!cancelled) setTakeoverLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
+
+  const onCreated = (item: CaseState) => {
+    setCaseState(item);
     setStep(1);
+    setError("");
   };
 
   const update = (partial: Partial<CaseState>) => {
-    setCaseState((prev) => (prev ? { ...prev, ...partial } : prev));
+    setCaseState((previous) =>
+      previous ? { ...previous, ...partial } : previous
+    );
   };
 
   const reset = () => {
     setCaseState(null);
     setStep(0);
+    setError("");
+    if (caseId) navigate("/pipeline", { replace: true });
   };
 
-  const runStage = async (fn: () => Promise<any>, partialKey: keyof CaseState) => {
+  const runStage = async (
+    fn: () => Promise<unknown>,
+    partialKey: keyof CaseState,
+    nextStep: number
+  ) => {
     if (!caseState) return;
     setBusy(true);
+    setError("");
     try {
-      const res = await fn();
-      update({ [partialKey]: res } as Partial<CaseState>);
+      const result = await fn();
+      update({ [partialKey]: result } as Partial<CaseState>);
+      setStep(nextStep);
+    } catch (stageError) {
+      const message =
+        (stageError as { response?: { data?: { detail?: string } } }).response
+          ?.data?.detail || "当前步骤处理失败，请稍后重试。";
+      setError(message);
     } finally {
       setBusy(false);
     }
   };
 
-  const handleWorkOrder = async () => {
-    await runStage(() => runWorkOrder(caseState!.case_id), "work_order");
-    setStep(2);
-  };
-  const handleClassify = async () => {
-    await runStage(() => runClassify(caseState!.case_id), "classification");
-    setStep(3);
-  };
-  const handleReply = async () => {
-    await runStage(() => runReply(caseState!.case_id), "reply");
-    setStep(4);
-  };
-
-  const onConfirmed = (c: CaseState) => {
-    setCaseState(c);
-  };
-
-  /** 节点跳转：仅允许回到已可达的步骤（数据已就绪），防止空面板 */
-  const jump = (s: number) => {
-    if (s === 0) {
+  const jump = (target: number) => {
+    if (target === 0) {
       reset();
       return;
     }
     if (!caseState) return;
     const reachable =
-      (s === 1 && !!caseState.understanding) ||
-      (s === 2 && !!caseState.work_order) ||
-      (s === 3 && !!caseState.classification) ||
-      (s === 4 && !!caseState.reply) ||
-      (s === 5 && !!caseState.reply);
-    if (reachable) setStep(s);
+      (target === 1 && !!caseState.understanding) ||
+      (target === 2 && !!caseState.work_order) ||
+      (target === 3 && !!caseState.classification) ||
+      (target === 4 && !!caseState.reply) ||
+      (target === 5 && (!!caseState.reply || caseState.confirmed));
+    if (reachable) setStep(target);
   };
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="brand">
-            <span className="brand-logo">政</span>
-            <span>
-              12345 热线工单智能辅助工作台
-              <span className="brand-sub">Gov Hotline Copilot</span>
-            </span>
-          </div>
-          <div className="top-right">
-            <span className={"engine-badge " + (engineMode === "llm" ? "llm" : "local")}>
-              <span className="dot" />
-              {engineMode === "llm" ? "大模型引擎 · 运行中" : "本地确定性引擎"}
-            </span>
-          </div>
+    <main className="main pipeline-page">
+      {caseId && !takeoverLoading && caseState && (
+        <div className="takeover" role="status">
+          <span aria-hidden="true">✓</span>
+          <span>
+            已接管工单 <span className="case-id">{caseState.case_id}</span>，
+            定位到第 {step + 1} 步“{STEPS[step]}”，可继续处理
+          </span>
         </div>
-      </header>
+      )}
 
-      <div className="layout">
-        <main className="main">
+      {takeoverLoading && (
+        <div className="alert info takeover-loading" role="status">
+          <span className="spinner small-spinner" aria-hidden="true" />
+          <span>正在加载并定位工单…</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="alert danger" role="alert">
+          <span className="alert-ico" aria-hidden="true">⚠</span>
+          <span>{error}</span>
+          {caseId && !caseState && (
+            <button className="alert-action" type="button" onClick={() => navigate("/")}>
+              返回首页
+            </button>
+          )}
+        </div>
+      )}
+
+      {!takeoverLoading && (
+        <>
           <Stepper current={step} caseState={caseState} onJump={jump} />
 
           {step === 0 && <InputPanel onCreated={onCreated} />}
 
           {step === 1 && caseState?.understanding && (
-            <UnderstandingPanel understanding={caseState.understanding} onNext={handleWorkOrder} />
+            <UnderstandingPanel
+              understanding={caseState.understanding}
+              onNext={() =>
+                runStage(
+                  () => runWorkOrder(caseState.case_id),
+                  "work_order",
+                  2
+                )
+              }
+            />
           )}
 
           {step === 2 && caseState?.work_order && (
-            <WorkOrderPanel workOrder={caseState.work_order} onNext={handleClassify} />
+            <WorkOrderPanel
+              workOrder={caseState.work_order}
+              onNext={() =>
+                runStage(
+                  () => runClassify(caseState.case_id),
+                  "classification",
+                  3
+                )
+              }
+            />
           )}
 
           {step === 3 && caseState?.classification && (
-            <ClassificationPanel classification={caseState.classification} onNext={handleReply} />
+            <ClassificationPanel
+              classification={caseState.classification}
+              onNext={() =>
+                runStage(() => runReply(caseState.case_id), "reply", 4)
+              }
+            />
           )}
 
           {step === 4 && caseState?.reply && (
@@ -129,17 +246,49 @@ export default function App() {
           )}
 
           {step === 5 && caseState && (
-            <ConfirmPanel caseState={caseState} onConfirmed={onConfirmed} />
+            <ConfirmPanel caseState={caseState} onConfirmed={setCaseState} />
           )}
+        </>
+      )}
 
-          {busy && (
-            <div className="busy-mask">
-              <span className="spinner" />
-              处理中…
-            </div>
-          )}
-        </main>
+      {busy && (
+        <div className="busy-mask" role="status" aria-live="polite">
+          <span className="spinner" />
+          处理中…
+        </div>
+      )}
+    </main>
+  );
+}
+
+function Application() {
+  const [engineMode, setEngineMode] = useState("local-engine");
+
+  useEffect(() => {
+    getMeta()
+      .then((meta) => setEngineMode(meta.engine_mode))
+      .catch(() => setEngineMode("local-engine"));
+  }, []);
+
+  return (
+    <div className="app">
+      <Header engineMode={engineMode} />
+      <div className="layout">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/pipeline" element={<PipelinePage />} />
+          <Route path="/data" element={<DataManagePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Application />
+    </BrowserRouter>
   );
 }

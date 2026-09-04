@@ -74,7 +74,39 @@ export interface CaseState {
   reply?: ReplyResult | null;
   confirmed: boolean;
   audit_log: AuditEntry[];
+  retrieved_contexts?: Record<string, unknown[]>;
+  rag_status?: Record<string, unknown>;
+  quality_flags?: string[];
+  human_review_required?: boolean;
+  next_action?: string | null;
+  graph_trace?: Record<string, unknown>[];
 }
+
+export interface DepartmentRule {
+  category_code: string;
+  category_name: string;
+  department: string;
+  co_departments: string[];
+  keywords: string[];
+  responsibilities: string;
+  source_name: string;
+  version: string;
+  note: string;
+}
+
+export interface DepartmentRulesDocument {
+  filename: string;
+  schema_version: string;
+  notice: string;
+  rule_fields: string[];
+  rules: DepartmentRule[];
+  updated_at: string;
+}
+
+export type DepartmentRuleUpdate = Pick<
+  DepartmentRule,
+  "category_name" | "department" | "co_departments" | "keywords" | "responsibilities"
+>;
 
 export interface TextSample {
   type: "text";
@@ -134,6 +166,11 @@ export async function getCase(id: string): Promise<CaseState> {
   return r.data;
 }
 
+export async function listCases(): Promise<CaseState[]> {
+  const r = await http.get("/api/cases");
+  return r.data;
+}
+
 export async function runWorkOrder(id: string): Promise<WorkOrder> {
   const r = await http.post(`/api/cases/${id}/workorder`);
   return r.data;
@@ -170,5 +207,35 @@ export async function getSamples(): Promise<SamplesResponse> {
 
 export async function getHistory(q: string): Promise<{ query: string; results: HistoryResult[] }> {
   const r = await http.get("/api/history", { params: { q } });
+  return r.data;
+}
+
+export async function getDepartmentRules(): Promise<DepartmentRulesDocument> {
+  const r = await http.get("/api/departments/rules");
+  return r.data;
+}
+
+export async function updateDepartmentRule(
+  code: string,
+  update: DepartmentRuleUpdate
+): Promise<{ rule: DepartmentRule; updated_at: string; index_count: number }> {
+  const r = await http.put(
+    `/api/departments/rules/${encodeURIComponent(code)}`,
+    update
+  );
+  return r.data;
+}
+
+export async function deleteDepartmentRule(
+  code: string
+): Promise<{
+  deleted_code: string;
+  rules_count: number;
+  updated_at: string;
+  index_count: number;
+}> {
+  const r = await http.delete(
+    `/api/departments/rules/${encodeURIComponent(code)}`
+  );
   return r.data;
 }

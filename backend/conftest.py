@@ -9,3 +9,14 @@
 import os
 
 os.environ["LLM_API_KEY"] = ""
+
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def isolated_case_database(tmp_path, monkeypatch):
+    """每个测试使用临时案件库，避免污染随项目提供的演示数据。"""
+    from app.workflow import store
+
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "cases.db")

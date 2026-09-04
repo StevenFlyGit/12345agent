@@ -4,6 +4,49 @@
 
 > 可靠性优先：有 LLM Key 走大模型，无 Key **自动回退确定性本地引擎**；ASR 以「文件名→样例精确匹配」为主、whisper 为辅、模拟转写为兜底。所有 AI 产出标注 `source`（llm / local-engine），ASR 来源标注 `transcript_source`。
 
+## 首页与导航
+
+- `/`：工作流总入口、工单状态 KPI、在途工单接管列表与分类分布。
+- `/pipeline`：原有六步工单工作台；支持 `/pipeline?case={case_id}` 加载并定位已有工单。
+- `/data`：部门规则搜索、详情、编辑与删除；保存后同步更新 JSON 和部门规则 RAG 索引。
+- 生产构建由 FastAPI 托管，以上页面路径可直接访问和刷新。
+
+## 首页展示数据接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/meta` | 顶部引擎状态：显示 `engine_mode`，接口失败时显示 `local-engine` |
+| GET | `/api/departments/rules` | 规则文件名：接口字段 `filename`，当前页面显示 `department_rules.json` |
+| GET | `/api/departments/rules` | 部门规则数量：`rules.length` |
+| GET | `/api/departments/rules` | 规则版本：优先取 `rules[0].version`，为空时取 `schema_version` |
+| GET | `/api/departments/rules` | 最近更新时间：`updated_at`，页面格式为 `MM/DD` |
+| GET | `/api/cases` | 工单总数：返回的工单数组长度 |
+| GET | `/api/cases` | 在途工单：工单总数减去 `confirmed=true` 的工单数 |
+| GET | `/api/cases` | 已确认完成：`confirmed=true` 的工单数 |
+| GET | `/api/cases` | 紧急工单：`understanding.urgent=true` 的工单数 |
+| GET | `/api/cases` | 概览进度条：在途工单数除以工单总数 |
+| GET | `/api/cases` | “已录入”数量：未完成、未进入人工复核，且无 `reply`、`classification`、`work_order` 的工单数 |
+| GET | `/api/cases` | “已生成工单”数量：未完成、未进入人工复核、无 `reply` 和 `classification`，但存在 `work_order` 的工单数 |
+| GET | `/api/cases` | “已分派待处理”数量：未完成、未进入人工复核、无 `reply`，但存在 `classification` 的工单数 |
+| GET | `/api/cases` | “已生成回复”数量：未完成、未进入人工复核，且存在 `reply` 的工单数 |
+| GET | `/api/cases` | “待最终确认”数量：未完成且 `next_action=human_review` 的工单数 |
+| GET | `/api/cases` | 在途工单列表总数：`confirmed` 不为 `true` 的工单数 |
+| GET | `/api/cases` | 工单编号：`case_id` |
+| GET | `/api/cases` | 工单状态：根据 `confirmed`、`next_action`、`reply`、`classification`、`work_order` 依次判断 |
+| GET | `/api/cases` | 紧急标识：`understanding.urgent=true` 时显示“急” |
+| GET | `/api/cases` | 工单标题：依次取 `work_order.title`、`understanding.demand`、`understanding.event`、`understanding.transcript`、`input.text` |
+| GET | `/api/cases` | 工单创建时间：`created_at`，页面格式为 `MM/DD HH:mm` |
+| GET | `/api/cases` | 工单列表顺序：按 `created_at` 倒序，默认显示前 8 条 |
+| GET | `/api/cases` | 已分类工单数：存在 `classification.category_name` 或 `classification.category` 的工单数 |
+| GET | `/api/cases` | 分类名称：优先取 `classification.category_name`，为空时取 `classification.category` |
+| GET | `/api/cases` | 分类数量：按分类名称分组计数，页面显示数量最多的前 8 类 |
+| GET | `/api/cases` | 未分类工单数：工单总数减去已分类工单数 |
+| GET | `/api/cases/{case_id}` | 点击工单后加载该工单详情，并进入原工作流对应步骤 |
+| GET | `/api/samples` | 点击“开始处理工单 →”进入工作流后，加载文本样例和录音样例 |
+| GET | `/api/departments/rules` | 点击“打开数据管理 →”后，加载完整部门规则列表 |
+
+> `GET /api/cases` 请求失败时，首页会显示前端内置的演示数据，并标记数据来源为“本地演示数据”。
+
 ## 一、目录结构（单仓库）
 
 ```
@@ -15,6 +58,7 @@
                            预处理产物(processed)、官方原始数据(raw)
     storage/cases.db       SQLite 库（自动创建，已 gitignore）
     scripts/prepare_dataset.py   官方 Excel -> work_orders.json 预处理
+    scripts/inspect_chroma_index.py  查看 Chroma 向量库内容并导出
     tools/                 环境/连通性自检脚本（verify_env.py、test_deepseek.py）
     tests/                 pytest 测试（test_api / test_edge_cases / test_health）
     venv/                  后端虚拟环境（本机自带，已 gitignore）
@@ -153,6 +197,9 @@ KDXF_ASR_POLL_TIMEOUT_SECONDS=300
 | POST | `/api/cases/{case_id}/reply`     | 回复辅助                                                                            |
 | POST | `/api/cases/{case_id}/confirm`   | 审核确认`{operator, note?}`                                                       |
 | POST | `/api/cases/{case_id}/handling`  | 处理录入`{text}`                                                                  |
+| GET  | `/api/departments/rules`         | 部门规则全量与文件信息                                                              |
+| PUT  | `/api/departments/rules/{code}`  | 更新单条部门规则并重建规则检索索引                                                  |
+| DELETE | `/api/departments/rules/{code}` | 删除单条部门规则并重建规则检索索引                                                  |
 | GET  | `/api/samples`                   | 样例文本与样例录音（可按文件名精确转写）                                            |
 | GET  | `/api/history?q=`                | 相似历史案例检索                                                                    |
 
@@ -171,7 +218,78 @@ cd 12345Agent-New\backend
 venv\Scripts\python.exe -m pytest tests/ -q
 ```
 
-## 七、说明与免责
+## 七、查看 Chroma 向量库内容
+
+`backend/scripts/inspect_chroma_index.py` 用于检查 Chroma 中各 collection 的记录内容、metadata 和检索结果。脚本会自动读取 `backend/app/rag/vectorstore.py` 中配置的 `CHROMA_DIR`，当前实际目录为 `backend/storage/chroma`，因此不需要额外传入 `--path`。
+
+请在 `12345Agent-New/backend` 目录下执行。若尚未激活虚拟环境，可以直接使用项目自带 Python：
+
+```powershell
+cd 12345Agent-New\backend
+venv\Scripts\python.exe scripts\inspect_chroma_index.py
+```
+
+### 1. 查看 collection 条数
+
+不传参数时只列出各 collection 的记录数量，不会打印全部正文：
+
+```powershell
+venv\Scripts\python.exe scripts\inspect_chroma_index.py
+```
+
+当前项目预置的 collection 包括：
+
+- `category_catalog`：分类目录
+- `department_rules`：部门职责与规则
+- `historical_cases`：历史工单
+- `policy_docs`：政策文件
+
+### 2. 查看指定 collection 的内容
+
+使用 `-c` 或 `--collection` 指定 collection，使用 `--limit` 限制显示条数；`0` 表示不限制：
+
+```powershell
+# 查看分类目录前 10 条
+venv\Scripts\python.exe scripts\inspect_chroma_index.py -c category_catalog --limit 10
+
+# 查看部门规则全部记录
+venv\Scripts\python.exe scripts\inspect_chroma_index.py --collection department_rules
+```
+
+### 3. 按关键词过滤
+
+`--grep` 会同时在 document 正文和 metadata 中进行不区分大小写的关键词匹配：
+
+```powershell
+venv\Scripts\python.exe scripts\inspect_chroma_index.py -c department_rules --grep 住建
+```
+
+### 4. 执行语义检索
+
+使用 `--query` 执行相似度检索，默认返回 3 条结果；可以通过 `--top-k` 调整返回数量：
+
+```powershell
+venv\Scripts\python.exe scripts\inspect_chroma_index.py -c department_rules --query "路灯不亮找谁" --top-k 5
+```
+
+### 5. 导出为 Markdown、JSON 或 HTML
+
+支持 `text`、`md`、`json`、`html` 四种输出格式。HTML 是单文件页面，打开后可以使用页面内搜索框查看记录：
+
+```powershell
+# 导出 Markdown
+venv\Scripts\python.exe scripts\inspect_chroma_index.py -c department_rules --format md -o out\department_rules.md
+
+# 导出 JSON
+venv\Scripts\python.exe scripts\inspect_chroma_index.py -c category_catalog --format json -o out\category_catalog.json
+
+# 导出带搜索框的 HTML 页面
+venv\Scripts\python.exe scripts\inspect_chroma_index.py -c historical_cases --format html -o out\historical_cases.html
+```
+
+说明：脚本一次只查看一个 collection 的详细内容；不传 `--collection` 时只显示所有 collection 的条数。若要查看全部 collection 的正文，需要分别指定 `-c` 执行，或分别导出为 HTML/JSON 文件。
+
+## 八、说明与免责
 
 - 部门职责（`backend/data/departments/department_rules.json`）与分类目录为**示例性归纳**，非现行权威权责，仅用于演示；正式版本以主办方提供目录为准。
 - 系统**仅提供辅助建议**，最终由工作人员确认（confirm 写 audit_log）。
