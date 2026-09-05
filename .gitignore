@@ -26,9 +26,8 @@ frontend/.env.*
 
 # 官方原始数据集仅保存在本机，保留目录占位文件
 backend/data/raw/official_work_orders/*
+backend/data/raw/public_policies
 !backend/data/raw/official_work_orders/.gitkeep
-信件类别示例工单及录音/
-12345赛题数据集-信件类别示例工单及录音.zip
 
 # 本地生成的历史工单默认不提交，保留目录占位文件
 backend/data/processed/*.jsonl
@@ -43,9 +42,7 @@ backend/models/
 *.log
 
 # 编辑器本机配置
-.vscode/settings.json
-
-# Windows 与 macOS 系统文件
+.vscode/
 Thumbs.db
 Desktop.ini
 .DS_Store
