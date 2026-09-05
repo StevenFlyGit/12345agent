@@ -1,9 +1,9 @@
-# 密钥与本地环境配置（.env 含真实 Key，绝不入库）
+# 本机密钥与环境变量
 .env
 .env.*
-!frontend/.env.example
+!.env.example
 
-# Python 虚拟环境（本机自带，不入库）
+# Python 与 Conda 虚拟环境
 .conda/
 .venv/
 venv/
@@ -13,30 +13,36 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
-# Coding Agent 本机缓存与私有状态
+# 前端依赖、构建产物和本机配置
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Coding Agent 本机缓存、会话和私有状态
 .agent/
+.workbuddy/
 
-# 官方原始数据集仅保存在本机（体积大，不入库）
-backend/data/raw/official_work_orders/
+# 官方原始数据集仅保存在本机，保留目录占位文件
+backend/data/raw/official_work_orders/*
 backend/data/raw/public_policies
-信件类别示例工单及录音/
+!backend/data/raw/official_work_orders/.gitkeep
 
-# 本地数据库、日志与运行数据
+# 本地生成的历史工单默认不提交，保留目录占位文件
+backend/data/processed/*.jsonl
+!backend/data/processed/.gitkeep
+
+# 后端本地数据库、日志和运行数据，保留目录占位文件
+backend/uploads/
+backend/storage/*
+!backend/storage/.gitkeep
+backend/models/
 *.db
 *.log
-uploads/
-backend/storage/
-models/
 
-# 前端依赖与构建中间产物
-# 注意：frontend/dist 为预构建产物，已提交仓库，便于无 Node.js 环境也直接运行演示
-frontend/node_modules/
-frontend/*.tsbuildinfo
-frontend/vite.config.js
-frontend/vite.config.d.ts
-
-# 编辑器与系统文件
-.vscode/settings.json
+# 编辑器本机配置
+.vscode/
 Thumbs.db
 Desktop.ini
 .DS_Store
